@@ -1,0 +1,28 @@
+2016-09-17 The-Michael-R <The-Michael-R@users.noreply.github.com>
+	* nuimo.c (nuimo_init_bt):
+	returned EXIT_SUCCESS in case of error in BT-Communication; now it is now EXIT_FAILURE
+
+	* nuimo.c :
+	Added prototypes of priveate functions
+	Changed structure to hold the object-removed event handler
+	Changed my_nuimo->connected to my_nuimo.>characteristic[NUIMO].connected
+	New my_nuimo->active_discovery (TRUE after StartDiscovery; FALSE after StopDiscovery)
+
+	* nuimo.c (cb_object_removed):
+	Added to cover disapearing Nuimo. And start looking again
+
+	* nuimo.h :
+	Moved #define DEBUG into Makefile
+
+	* example.c (cb_termination);
+	Changed cb_termination to match required format (return boolean)
+
+	* example.c (main):
+	Moved nuimo_read_value(NUIMO_BATTERY) to SWIPE_DOWN action to reduce traffic
+
+	* example.h:
+	Added #include <glib-unix.h> to prevent implicit declaration
+	Removed cb_termination prototype (is a private function
+
+	* Makefile :
+	Added debug-target; It builds the example with debug printing enabled

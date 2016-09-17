@@ -7,6 +7,11 @@ SRC = nuimo.c example.c
 OBJ = nuimo.o example.o
 BIN = example
 
+all:	example
+
+debug:	CFLAGS += -DDEBUG
+debug:	example
+
 example:	$(OBJ)
 	$(CC) $(CFLAGS) -o example $(OBJ) $(LDFLAGS)
 

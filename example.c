@@ -1,10 +1,12 @@
 #include "example.h"
 
 // Stops the g_main_loop; call this function to stop the programm
-void cb_termination(gpointer data) {
+static gboolean cb_termination(gpointer data) {
   DEBUG_PRINT(("cb_termination\n"));
   
   g_main_loop_quit(data);
+
+  return(FALSE);
 }
 
 
@@ -42,23 +44,21 @@ void my_cb_function(uint chr, int value, uint dir) {
     break;
     
   case NUIMO_SWIPE:
-    printf("SWIPE ");
     if (dir == NUIMO_SWIPE_LEFT) {
-      printf("left\n");
+      printf("SWIPE left\n");
     } else if (dir == NUIMO_SWIPE_RIGHT) {
-      printf("right\n");
+      printf("SWIPE right\n");
     } else if (dir == NUIMO_SWIPE_UP) {
-      printf("up\n");
+      printf("SWIPE up\n");
     }  else if (dir == NUIMO_SWIPE_DOWN) {
-      printf("down\n");
+      printf("SWIPE down\n");
+      // issue a read-value. This function here will be called after the result reaches this computer
+      nuimo_read_value(NUIMO_BATTERY);
     }
     break;
     
   case NUIMO_ROTATION:
     printf("ROTATE %s %d steps\n", dir == NUIMO_ROTATION_LEFT ? "->" : "<-", value);
-    // issue a read-value. This function here will be called after the result reaches this computer
-    nuimo_read_value(NUIMO_BATTERY);
-
     
     break;
   default:

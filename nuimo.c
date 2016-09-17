@@ -1,5 +1,12 @@
 #include "nuimo.h"
 
+// prototypes for private functions
+static void cb_change_val_notify (GDBusProxy *proxy, GVariant *changed_properties, GStrv invalidated_properties, gpointer user_data);
+static void connect_nuimo (GDBusObjectManager *manager, GDBusObject *object);
+static void get_characteristics(GDBusObjectManager *manager, GDBusObject *object);
+static void cb_object_added (GDBusObjectManager *manager, GDBusObject *object, gpointer user_data);
+static void cb_object_removed (GDBusObjectManager *manager, GDBusObject *object, gpointer user_data);
+
 const char NUIMO_UUID[NUIMO_ENTRIES_LEN][37] = {
   "                                    ", // Blank for BT-Adapter
   "00001800-0000-1000-8000-00805f9b34fb", // NUIMO
@@ -24,8 +31,9 @@ struct nuimo_status_s {
   char               *keyword;  // e.g. "Address"
   char               *value;    // e.g. "xx:xx:xx:xx:xx:xx"
   gulong              object_added_sig_hdl;
+  gulong              object_removed_sig_hdl;  
   GDBusObjectManager *manager;
-  gboolean            connected;
+  gboolean            active_discovery;
   void              (*cb_function)(uint, int, uint);
   characteristic_s    characteristic[NUIMO_ENTRIES_LEN];
 };
@@ -36,6 +44,7 @@ static struct nuimo_status_s *my_nuimo;
 
 // private function
 // call back routine preformats the received change and call the user call back function
+// It also catches the Nuimo related messages (including disconnect). Currently this get not exposed to user
 static void cb_change_val_notify (GDBusProxy *proxy, GVariant *changed_properties, GStrv invalidated_properties, gpointer user_data) {
   GVariant   *v2;
   const char *value;
@@ -44,7 +53,20 @@ static void cb_change_val_notify (GDBusProxy *proxy, GVariant *changed_propertie
   uint        direction = 0;
 
   DEBUG_PRINT(("cb_change_val_notify\n"));
-  
+
+
+  // Check if te Nuimo just got disconnected
+  if (GPOINTER_TO_INT(user_data) == NUIMO) {
+    v2 = g_variant_lookup_value(changed_properties, "Connected", NULL);
+    if (v2 && !g_variant_get_boolean(v2)) {
+      printf("--> Disconnected!\n");
+      
+      // Do the hard way: remove everything and start from the beginning
+      nuimo_disconnect();
+      nuimo_init_bt();
+    }
+} 
+
   v2 = g_variant_lookup_value(changed_properties, "Value", NULL);
   
   if (!v2) {
@@ -130,7 +152,7 @@ static void connect_nuimo (GDBusObjectManager *manager, GDBusObject *object) {
 			     NULL,
 			     &DBerror);
 
-      if(DBerror) {
+      if (DBerror) {
 	fprintf(stderr, "*EE* Error connecting: %s\n", DBerror->message);
 	free(my_nuimo->characteristic[BT_ADAPTER].path);
 	g_variant_unref(variant);
@@ -138,24 +160,41 @@ static void connect_nuimo (GDBusObjectManager *manager, GDBusObject *object) {
 	return;
       }
 
-      // As I'm connected now start looking for Characteristics
-      DBerror = NULL;
-      g_dbus_proxy_call_sync( my_nuimo->characteristic[BT_ADAPTER].proxy,
-			      "StopDiscovery",
-			      NULL,
-			      G_DBUS_CALL_FLAGS_NONE,
-			      -1,
-			      NULL,
-			      &DBerror);
+      if (my_nuimo->active_discovery) {
+	// As I'm connected now start looking for Characteristics
+	DBerror = NULL;
+	g_dbus_proxy_call_sync( my_nuimo->characteristic[BT_ADAPTER].proxy,
+				"StopDiscovery",
+				NULL,
+				G_DBUS_CALL_FLAGS_NONE,
+				-1,
+				NULL,
+				&DBerror);
 
-      if(DBerror) {
-	fprintf(stderr, "*EE* Error StopDiscovery: %s\n", DBerror->message);
-	g_variant_unref(variant);
-	g_error_free(DBerror);
-	return;
+	if (DBerror) {
+	  fprintf(stderr, "*EE* Error StopDiscovery: %s\n", DBerror->message);
+	  g_variant_unref(variant);
+	  g_error_free(DBerror);
+	  return;
+	}
+	my_nuimo->active_discovery = FALSE;
       }
+
+      // Connect to signals from Nuimo; including if it gets disconnected	  
+      my_nuimo->characteristic[NUIMO].char_sig_hdl = g_signal_connect (my_nuimo->characteristic[NUIMO].proxy,
+								       "g-properties-changed",
+								       G_CALLBACK (cb_change_val_notify),
+								       GINT_TO_POINTER(NUIMO));
+
+      // Connect to object-removed signal to see if the Nuimo disappears
+      my_nuimo->object_removed_sig_hdl = g_signal_connect (my_nuimo->manager,
+							   "object-removed",
+							   G_CALLBACK (cb_object_removed),
+							   NULL);
+
+
       
-      my_nuimo->connected = TRUE;
+      my_nuimo->characteristic[NUIMO].connected = TRUE;
       break;
     }
   }
@@ -241,10 +280,44 @@ static void get_characteristics(GDBusObjectManager *manager, GDBusObject *object
 static void cb_object_added (GDBusObjectManager *manager, GDBusObject *object, gpointer user_data) {
   DEBUG_PRINT(("cb_object_added\n"));
 
-  if (!my_nuimo->connected) {
+  if (!my_nuimo->characteristic[NUIMO].connected) {
     connect_nuimo(manager, object);
   } else {
     get_characteristics(manager, object);
+  }
+}
+
+
+// private function
+// Receives a signal in case the Nuimo gets disconnected
+// First all handles must released and thn the search needs to be re-initated
+static void cb_object_removed (GDBusObjectManager *manager, GDBusObject *object, gpointer user_data) {
+  DEBUG_PRINT(("cb_object_removed\n"));
+
+  GVariant *variant = NULL;
+  GList    *if_list, *interfaces;
+
+  // Check if the Nuimo triggered the object-removed event
+  interfaces = g_dbus_object_get_interfaces (G_DBUS_OBJECT (object));
+      
+  for (if_list = interfaces; if_list != NULL; if_list = if_list->next) {
+
+    // Search for Nuimo
+    variant = g_dbus_proxy_get_cached_property (if_list->data, "Name");
+    if (!my_nuimo->characteristic[BT_ADAPTER].path &&
+	variant && !strcmp(NUIMO_NAME, g_variant_get_string(variant, NULL))) {
+
+      // If keyword is set check if the value matches. if not continue
+      if (my_nuimo->keyword) {
+	variant = g_dbus_proxy_get_cached_property (if_list->data, my_nuimo->keyword);
+	if (!variant || strcmp(my_nuimo->value, g_variant_get_string(variant, NULL))) {
+	  continue;
+	}
+      }
+      // Do the hard way: remove everything and start from the beginning
+      nuimo_disconnect();
+      nuimo_init_bt();
+    }
   }
 }
 
@@ -254,7 +327,7 @@ static void cb_object_added (GDBusObjectManager *manager, GDBusObject *object, g
 void nuimo_print_status() {
   printf("\nCurrent Nuimo Status\n");
   printf("====================\n");
-  printf("  Nuimo is%s connected\n"      , my_nuimo->connected ? "" : " not");
+  printf("  Nuimo is%s connected\n"      , my_nuimo->characteristic[NUIMO].connected ? "" : " not");
   printf("  Got Nuimo proxy %s\n"        , my_nuimo->characteristic[NUIMO].proxy ? "yes" : " no");
   printf("  status->device_path   = %s\n", my_nuimo->characteristic[NUIMO].path);
   printf("  status->battery_path  = %s\n", my_nuimo->characteristic[NUIMO_BATTERY].path);
@@ -361,6 +434,7 @@ int nuimo_init_status() {
     my_nuimo->characteristic[i].connected = FALSE;
     i++;
   }
+  my_nuimo->active_discovery = FALSE;
 
   return(EXIT_SUCCESS);
 }
@@ -416,7 +490,7 @@ int nuimo_init_cb_function(void *cb_function) {
 void nuimo_disconnect () {
   uint i = NUIMO_ENTRIES_LEN;
 
-  DEBUG_PRINT(("disconnect_nuimo\n"));
+  DEBUG_PRINT(("nuimo_disconnect\n"));
 
   if (my_nuimo->object_added_sig_hdl) {
     g_signal_handler_disconnect(my_nuimo->manager,
@@ -424,8 +498,14 @@ void nuimo_disconnect () {
     my_nuimo->object_added_sig_hdl = 0;
   }
   
+  if (my_nuimo->object_removed_sig_hdl) {
+    g_signal_handler_disconnect(my_nuimo->manager,
+				my_nuimo->object_removed_sig_hdl);
+    my_nuimo->object_removed_sig_hdl = 0;
+  }
+  
   // In case I'm still looking for the Nuimo
-  if (my_nuimo->manager) {
+  if (my_nuimo->manager &&  my_nuimo->active_discovery) {
     g_dbus_proxy_call_sync(my_nuimo->characteristic[BT_ADAPTER].proxy,
 			   "StopDiscovery",
 			   NULL,
@@ -434,6 +514,7 @@ void nuimo_disconnect () {
 			   NULL,
 			   NULL);
   }
+  my_nuimo->active_discovery = FALSE;
   
   while(i > NUIMO) {
     i--;
@@ -445,6 +526,15 @@ void nuimo_disconnect () {
     
     if (my_nuimo->characteristic[i].proxy) {
       if (my_nuimo->characteristic[i].char_sig_hdl) {
+
+	g_dbus_proxy_call_sync(my_nuimo->characteristic[i].proxy,
+			       "StopNotify",
+			       NULL,
+			       G_DBUS_CALL_FLAGS_NONE,
+			       -1,
+			       NULL,
+			       NULL);
+	
 	g_signal_handler_disconnect(my_nuimo->characteristic[i].proxy,
 				    my_nuimo->characteristic[i].char_sig_hdl);
 	my_nuimo->characteristic[i].char_sig_hdl = 0;
@@ -457,6 +547,7 @@ void nuimo_disconnect () {
 			     -1,
 			     NULL,
 			     NULL);
+      my_nuimo->characteristic[i].proxy = NULL;
     }
   }
 
@@ -464,9 +555,8 @@ void nuimo_disconnect () {
     g_object_unref(my_nuimo->manager);
     my_nuimo->manager = NULL;
   } 
-  my_nuimo->connected = FALSE;
+  my_nuimo->characteristic[NUIMO].connected = FALSE;
 }
-
 
 
 // public function
@@ -479,7 +569,7 @@ int nuimo_init_bt() {
   GDBusInterface *interface;
   
   DEBUG_PRINT(("nuimo_init_bt\n"));
-  
+
   my_nuimo->manager = g_dbus_object_manager_client_new_for_bus_sync(G_BUS_TYPE_SYSTEM,
 								    G_DBUS_OBJECT_MANAGER_CLIENT_FLAGS_NONE,
 								    BT_STACK,
@@ -501,29 +591,44 @@ int nuimo_init_bt() {
 						     NULL);
 
   objects = g_dbus_object_manager_get_objects(my_nuimo->manager);
+
+  // First look for the BT-Adapter.
   for (ob_list = objects; ob_list != NULL; ob_list = ob_list->next) {
     
     interface = g_dbus_object_get_interface (ob_list->data, BT_ADAPTER_NAME);
     if(interface) {
       my_nuimo->characteristic[BT_ADAPTER].proxy = G_DBUS_PROXY (interface);
 
-      DBerror = NULL;
-      g_dbus_proxy_call_sync( my_nuimo->characteristic[BT_ADAPTER].proxy,
-			      "StartDiscovery",
-			      NULL,
-			      G_DBUS_CALL_FLAGS_NONE,
-			      -1,
-			      NULL,
-			      &DBerror);
-
-      if(DBerror) {
-	fprintf(stderr, "*EE* Error StartDiscovery: %s\n", DBerror->message);
-	g_error_free(DBerror);
-	return (EXIT_SUCCESS);
-      }
       break;
     }
   }
+
+  // If successful, run a second loop and check if the Nuimo is already known
+  if (my_nuimo->characteristic[BT_ADAPTER].proxy) {
+    for (ob_list = objects; ob_list != NULL; ob_list = ob_list->next) {
+      connect_nuimo(my_nuimo->manager, ob_list->data);
+      get_characteristics(my_nuimo->manager, ob_list->data);
+    }
+  }
+
+  // if the Nuimo is not in the list, start looking activley
+  if (!my_nuimo->characteristic[NUIMO].proxy && !my_nuimo->active_discovery) {
+    DBerror = NULL;
+    g_dbus_proxy_call_sync( my_nuimo->characteristic[BT_ADAPTER].proxy,
+			    "StartDiscovery",
+			    NULL,
+			    G_DBUS_CALL_FLAGS_NONE,
+			    -1,
+			    NULL,
+			    &DBerror);
     
+    if(DBerror) {
+      fprintf(stderr, "*EE* Error StartDiscovery: %s\n", DBerror->message);
+      g_error_free(DBerror);
+      return (EXIT_FAILURE);
+    }
+    my_nuimo->active_discovery = TRUE;
+  }
+  
   return (EXIT_SUCCESS);
 }
