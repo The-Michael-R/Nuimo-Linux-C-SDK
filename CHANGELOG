@@ -1,3 +1,27 @@
+2016-09-18 The-Michael-R <The-Michael-R@users.noreply.github.com>
+	* General:
+	Modified the comments to use doxygen for documentation.
+	Added more text for documentation.
+
+	* nuimo.h:
+	Added new #defines for added Nuimo functionality (TOUCH_LEFT, _RIGHT, _TOP, _BOTTOM)
+	Changed return value from int to void for nuimo_init_cb_function
+
+	* nuimo.c (nuimo_init_cb_function):
+	Changed return value from int to void
+	Added missing DEBUG_PRINT
+
+	* example.c (my_cb_function):
+	Using the new function to generate bitmap
+	Added examples for new Nuimo functionality
+
+	* example (bmp_to_array);
+	New: Function to translate string-bitmap to  array for LED-Matrix
+
+	* Makefile:
+	Added doc-target. Generating documentation using doxygen
+
+
 2016-09-17 The-Michael-R <The-Michael-R@users.noreply.github.com>
 	* nuimo.c (nuimo_init_bt):
 	returned EXIT_SUCCESS in case of error in BT-Communication; now it is now EXIT_FAILURE

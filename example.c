@@ -1,6 +1,10 @@
 #include "example.h"
 
-// Stops the g_main_loop; call this function to stop the programm
+/**
+ * Stops the g_main_loop; call this function to stop the programm
+ *
+ * @param data Is the g_main_loop handle returnes by ::g_main_loop_new
+ */
 static gboolean cb_termination(gpointer data) {
   DEBUG_PRINT(("cb_termination\n"));
   
@@ -10,13 +14,70 @@ static gboolean cb_termination(gpointer data) {
 }
 
 
+/**
+ * Convert a bitmap-string to array
+ * Useful for painting LED-Matrix. But the function is written to be not specific
+ * for this functin. So please notice: As the 9x9 bitmap for the Nuimo LED matrix
+ * does not fit well into the 8-Bit array the marix must modified before send to Nuimo
+ * by using img[10] >>= 7;
+ *
+ * @param bmp   In case for Nuimo usage: This is a srring of 82 chars (81 for pattern + \0)
+ * @param array Return of the char pattern. No malloc/free is performed in this function!
+ */
+void bmp_to_array(const unsigned char *bmp, unsigned char *array) {
+  unsigned int bmp_pos;
+  unsigned int array_pos;
+  unsigned int bit;
 
-void my_cb_function(uint chr, int value, uint dir) {
-  unsigned char img1[] = {0x04, 0x18, 0x70, 0xe0, 0xc1, 0x87, 0x07, 0x07, 0x06, 0x04, 0x00}; // image bitmap
+  bmp_pos = 0;
+  array_pos = 0;
+  bit = 0;
+  
+  while(bmp[bmp_pos]) {
+    array[array_pos] >>= 1;
+
+    if (bmp[bmp_pos] == '1' || bmp[bmp_pos] == '*') {
+      array[array_pos] = array[array_pos] + 0x80;
+    }
+
+    if (bit == 7) {
+      bit = 0;
+      array_pos++;
+      array[array_pos] = 0;
+    } else {
+      bit++;
+    }
+    bmp_pos++;
+  }
+}
+
+/**
+ * Main example callback function used to execute user actions in case the Nuimo characteristics
+ * send a change-value notification. To install this function use ::nuimo_init_cb_function
+ *
+ * @param characteristic The characteristic based on ::nuimo_chars_e
+ * @param value          Any decimal returnvalue from the Nuimo (in case of SWIPE/TOUCH events the value is 0)
+ * @param dir            Indicated the direction of the received event. based on \ref NUIMO_DIRECTIONS
+ * @see cb_change_val_notify
+ * @see nuimo_init_cb_function
+ */
+void my_cb_function(uint characteristic, int value, uint dir) {
+  unsigned char bmp[] =
+    "........."
+    ".*..*..*."
+    ".*..*...."
+    ".*..*..*."
+    ".****..*."
+    ".*..*..*."
+    ".*..*..*."
+    ".*..*..*."
+    "........."; 
+  unsigned char img[11];
 
   DEBUG_PRINT(("my_cb_function\n"));
 
-  switch (chr) {
+    
+  switch (characteristic) {
   case NUIMO_BATTERY:
     printf("BATTERY %d%%\n", value);
     break;
@@ -24,7 +85,11 @@ void my_cb_function(uint chr, int value, uint dir) {
   case NUIMO_BUTTON:
     printf("BUTTON %s\n", value ==  NUIMO_BUTTON_PRESS ? "pressed" : "released" );
     if (value == NUIMO_BUTTON_PRESS) {
-      nuimo_set_led(img1, 0x80, 50);
+      bmp_to_array(bmp, img);
+      // This right-shift is required as the bmp_to_array is written general, but the Nuimo
+      // expectes this single bit on the 'other' end
+      img[10] >>= 7;
+      nuimo_set_led(img, 0x80, 50);
     }
     break;
     
@@ -54,6 +119,14 @@ void my_cb_function(uint chr, int value, uint dir) {
       printf("SWIPE down\n");
       // issue a read-value. This function here will be called after the result reaches this computer
       nuimo_read_value(NUIMO_BATTERY);
+    } else if (dir == NUIMO_TOUCH_LEFT) {
+      printf("TOUCH left\n");
+    } else if (dir == NUIMO_TOUCH_RIGHT) {
+      printf("TOUCH right\n");
+    } else if (dir == NUIMO_TOUCH_TOP) {
+      printf("TOUCH top\n");
+    } else if (dir == NUIMO_TOUCH_BOTTOM) {
+      printf("TOUCH bottom\n");
     }
     break;
     
@@ -66,7 +139,14 @@ void my_cb_function(uint chr, int value, uint dir) {
   }
 }
 
-
+/**
+ * Default main function. It ignores any given parameter.
+ * To initialize, use and close the connection to the Nuimo please follow the
+ * code here. It's very simple.
+ *
+ * @param argc Ignored
+ * @param argv Ignored
+ */
 int main (int argc, char **argv) {
   GMainLoop *loop;
  

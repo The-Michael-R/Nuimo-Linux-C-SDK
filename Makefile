@@ -18,6 +18,10 @@ example:	$(OBJ)
 %.o:	%.c
 	$(CC) $(CFLAGS) -c $<
 
-.PHONY:	clean
+doc: doxygen_conf.dox $(OBJ) 
+	doxygen doxygen_conf.dox
+
 clean:
 	rm -rf $(BIN) $(OBJ)
+
+.PHONY:	clean all doc

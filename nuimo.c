@@ -7,18 +7,29 @@ static void get_characteristics(GDBusObjectManager *manager, GDBusObject *object
 static void cb_object_added (GDBusObjectManager *manager, GDBusObject *object, gpointer user_data);
 static void cb_object_removed (GDBusObjectManager *manager, GDBusObject *object, gpointer user_data);
 
+
+/**
+ * List of individual UUIDs of the Nuimo and the individual characteristics.
+ * The order must be the same like in ::nuimo_chars_e.
+ */
 const char NUIMO_UUID[NUIMO_ENTRIES_LEN][37] = {
-  "                                    ", // Blank for BT-Adapter
-  "00001800-0000-1000-8000-00805f9b34fb", // NUIMO
-  "00002a19-0000-1000-8000-00805f9b34fb", // NUIMO_BATTERY 
-  "f29b1524-cb19-40f3-be5c-7241ecb82fd1", // NUIMO_LED     
-  "f29b1529-cb19-40f3-be5c-7241ecb82fd2", // NUIMO_BUTTON  
-  "f29b1526-cb19-40f3-be5c-7241ecb82fd2", // NUIMO_FLY     
-  "f29b1527-cb19-40f3-be5c-7241ecb82fd2", // NUIMO_SWIPE   
-  "f29b1528-cb19-40f3-be5c-7241ecb82fd2"  // NUIMO_ROTATION
+  "                                    ", /// Blank for BT-Adapter
+  "00001800-0000-1000-8000-00805f9b34fb", /// NUIMO
+  "00002a19-0000-1000-8000-00805f9b34fb", /// NUIMO_BATTERY 
+  "f29b1524-cb19-40f3-be5c-7241ecb82fd1", /// NUIMO_LED     
+  "f29b1529-cb19-40f3-be5c-7241ecb82fd2", /// NUIMO_BUTTON  
+  "f29b1526-cb19-40f3-be5c-7241ecb82fd2", /// NUIMO_FLY     
+  "f29b1527-cb19-40f3-be5c-7241ecb82fd2", /// NUIMO_SWIPE   
+  "f29b1528-cb19-40f3-be5c-7241ecb82fd2"  /// NUIMO_ROTATION
 };
 
 
+/**
+ * Structure used to manage the individual Characteristics and devices (BT-Adapter and the Nuimo itself).
+ * The structure will be used in the ::nuimo_status_s only.
+ *
+ * \warning This is private stuff. No need to access from the user!
+ */
 typedef struct {
   char       *path;
   gboolean    connected;
@@ -27,24 +38,38 @@ typedef struct {
 }characteristic_s;
 
 
+/**
+ * Defines the structure of the structure that holds all required information about 
+ * the BT-Adapter, the Nuimo and its characteristics.
+ *
+ * \warning This is private stuff. No need to access from the user!
+ */
 struct nuimo_status_s {
-  char               *keyword;  // e.g. "Address"
-  char               *value;    // e.g. "xx:xx:xx:xx:xx:xx"
-  gulong              object_added_sig_hdl;
-  gulong              object_removed_sig_hdl;  
-  GDBusObjectManager *manager;
-  gboolean            active_discovery;
-  void              (*cb_function)(uint, int, uint);
-  characteristic_s    characteristic[NUIMO_ENTRIES_LEN];
+  char               *keyword;                           /// Used for search a specific Nuimo (e.g. "Address")
+  char               *value;                             /// Used for search a specific Nuimo (e.g. "xx:xx:xx:xx:xx:xx")
+  gulong              object_added_sig_hdl;              /// Holds the handler for 'BT found new device' events
+  gulong              object_removed_sig_hdl;            /// Holds the handler for 'BT lost a conneted device'
+  GDBusObjectManager *manager;                           /// GDbus manager.
+  gboolean            active_discovery;                  /// Just to remember that the code started a discovery
+  void              (*cb_function)(uint, int, uint);     /// This is the pointer to the user callback function
+  characteristic_s    characteristic[NUIMO_ENTRIES_LEN]; /// An array of structs to manage all required information for each characteristic and devices
 };
 
 
+/**
+ * Private global (sorry) variable holding all information about the connected Nuimo
+ */
 static struct nuimo_status_s *my_nuimo;
 
-
-// private function
-// call back routine preformats the received change and call the user call back function
-// It also catches the Nuimo related messages (including disconnect). Currently this get not exposed to user
+/**
+ * Callback routine preformats the received change and call the user call back function
+ * It also catches the Nuimo related messages (including disconnect). Currently this get not exposed to user
+ *
+ * @param proxy
+ * @param changed_properties 
+ * @param invalidated_properties
+ * @param user_data
+*/
 static void cb_change_val_notify (GDBusProxy *proxy, GVariant *changed_properties, GStrv invalidated_properties, gpointer user_data) {
   GVariant   *v2;
   const char *value;
@@ -104,9 +129,13 @@ static void cb_change_val_notify (GDBusProxy *proxy, GVariant *changed_propertie
 }
 
 
-// private function
-// uses the bt_adapter to connect to the Nuimo (after checking that the Nuimo matches the
-// key/value pair if given)
+/**
+ * uses the bt_adapter to connect to the Nuimo (after checking that the Nuimo matches the
+ * key/value pair if given)
+ *
+ * @param manager
+ * @param object
+*/
 static void connect_nuimo (GDBusObjectManager *manager, GDBusObject *object) {
   GVariant    *variant = NULL;
   GList       *if_list, *interfaces;
@@ -205,8 +234,12 @@ static void connect_nuimo (GDBusObjectManager *manager, GDBusObject *object) {
 }
 
 
-// private function
-// Gather all characteristics and setup change notification for all of them
+/**
+ * Gather all characteristics and setup change notification for all of them
+ *
+ * @param manager
+ * @param object
+ */
 static void get_characteristics(GDBusObjectManager *manager, GDBusObject *object) {
   GVariant    *variant = NULL;
   GList       *if_list, *interfaces;
@@ -275,8 +308,13 @@ static void get_characteristics(GDBusObjectManager *manager, GDBusObject *object
 }
 
 
-// private function
-// Receives a signal in case a object (Nuimo or characteristic) is newly found
+/**
+ * Receives a signal in case a object (Nuimo or characteristic) is newly found
+ *
+ * @param manager
+ * @param object
+ * @param user_data
+ */
 static void cb_object_added (GDBusObjectManager *manager, GDBusObject *object, gpointer user_data) {
   DEBUG_PRINT(("cb_object_added\n"));
 
@@ -288,9 +326,14 @@ static void cb_object_added (GDBusObjectManager *manager, GDBusObject *object, g
 }
 
 
-// private function
-// Receives a signal in case the Nuimo gets disconnected
-// First all handles must released and thn the search needs to be re-initated
+/**
+ * Receives a signal in case the Nuimo gets disconnected
+ * First all handles must released and thn the search needs to be re-initated
+ *
+ * @param manager
+ * @param object
+ * @param user_data
+ */
 static void cb_object_removed (GDBusObjectManager *manager, GDBusObject *object, gpointer user_data) {
   DEBUG_PRINT(("cb_object_removed\n"));
 
@@ -322,8 +365,10 @@ static void cb_object_removed (GDBusObjectManager *manager, GDBusObject *object,
 }
 
 
-// public function
-// During debugging this may print some helpful information
+/**
+ * During debugging this may print some helpful information. Might not be used
+ * in production code.
+*/
 void nuimo_print_status() {
   printf("\nCurrent Nuimo Status\n");
   printf("====================\n");
@@ -340,11 +385,15 @@ void nuimo_print_status() {
 }
 
 
-// public function
-// Sends the provided bitpattern to the connected Nuimo.
-// bitmap must be an array of 11 Bytes representing the 9x9 bittmap
-// brightness is the brightness of the LED
-// timeout the time the bitmap is displayed (0...25.5 seconds)
+/**
+ * Sends the provided bit pattern to the connected Nuimo LED matrix. Format of the bitmap is the upper left
+ * LED is in bitmap[0],bit 0; while the lower right LED is in bitmap[10], bit 0
+ *
+ * @param bitmap     Must be an array of 11 Bytes representing the 9x9 bitmap
+ * @param brightness Is the brightness of the LED
+ * @param timeout    The time the bitmap is displayed (0...25.5 seconds)
+ * @return Returns EXIT_SUCCESS or EXIT_FAILURE depending if the request was successful or not
+*/
 int  nuimo_set_led(const unsigned char* bitmap, const unsigned char brightness, const unsigned char timeout) {
   unsigned char  pattern[13];
   GVariant      *varled;
@@ -384,9 +433,13 @@ int  nuimo_set_led(const unsigned char* bitmap, const unsigned char brightness, 
 }  
 
 
-// public function
-// Issue a read value. After the read is done the callback function is issued and returning the requestedd value
-// characteristic indicates wich walue is requested; see nuimo_chars_e
+/**
+ * Issue a read value. After the read is done the callback function is issued and returning the requestedd
+ * value characteristic indicates wich walue is requested;
+ *
+ * @param characteristic Defines the characteristic to read from ::nuimo_chars_e
+ * @return Returns EXIT_SUCCESS or EXIT_FAILURE depending if the request was successful or not
+*/
 int  nuimo_read_value(const unsigned char characteristic) {
   GVariant *sendvar;
   GError   *DBerror;
@@ -416,8 +469,11 @@ int  nuimo_read_value(const unsigned char characteristic) {
 }
 
 
-// public function
-// Initializes the my_nuimo structure
+/**
+ * Initializes the my_nuimo structure
+ *
+ * @return Returns EXIT_SUCCESS or EXIT_FAILURE depending if the request was successful or not
+ */
 int nuimo_init_status() {
   uint i;
 
@@ -440,11 +496,13 @@ int nuimo_init_status() {
 }
 
 
-// public function
-// Sets Keyword and Value to search for. Useful if more than one Nuimo is in the area
-// In case the Keyword or value is already set it will be deleted
-// key   is the keyword (e.g. "Address")
-// value is the value you're looking for (e.g. "xx:xx:xx:xx:xx:xx")
+/**
+ * Sets Keyword and Value to search for. Useful if more than one Nuimo is in the area
+ * In case the Keyword or value is already set it will be deleted
+ *
+ * @param key The keyword (e.g. "Address")
+ * @param val The value you're looking for (e.g. "xx:xx:xx:xx:xx:xx")
+*/
 int nuimo_init_search(const char* key, const char* val) {
   DEBUG_PRINT(("nuimo_init_search\n"));
   
@@ -469,24 +527,24 @@ int nuimo_init_search(const char* key, const char* val) {
   return(EXIT_SUCCESS);
 }
 
-
-// public function
-// Assigns the callback function for the user. The function must receive three values:
-// void cb_function(uint characteristic, int value, uint direction)
-//
-// characteristic is the identifier (see characteristic_s)
-// value          is the value of movement
-// direction      is (if applicable) informs you about direction of movement
-//                see defines in nuimo.h
-int nuimo_init_cb_function(void *cb_function) {
-  my_nuimo->cb_function = cb_function;
+/**
+ * Assigns the callback function for the user. The function must receive three values:
+ * void cb_function(uint characteristic, int value, uint direction) with the following parameters:
+ * \n \n 
+ * characteristic The identifier (see ::characteristic_s) \n 
+ * value          The value of movement. In case of SWIPE/TOUCH the value is 0 \n 
+ * direction      Informs you about direction of movement. In case of BUTTON and BATTERY events the value is 0
+ */
+void nuimo_init_cb_function(void *cb_function) {
+  DEBUG_PRINT(("nuimo_init_cb_function\n"));
   
-  return(EXIT_SUCCESS);
+  my_nuimo->cb_function = cb_function;
 }
 
 
-// public function
-// Disconnects from Nuimo and all characteristics and do some cleanup
+/**
+ * Disconnects from Nuimo and all characteristics and do some cleanup.
+ */
 void nuimo_disconnect () {
   uint i = NUIMO_ENTRIES_LEN;
 
@@ -559,9 +617,11 @@ void nuimo_disconnect () {
 }
 
 
-// public function
-// Initializes the BT stack.
-// It also starts looking for devices
+/**
+ * Initializes the BT stack and start looking for devices like the Nuimo 
+ *
+ * @return Returns EXIT_SUCCESS or EXIT_FAILURE depending if the request was successful or not
+ */
 int nuimo_init_bt() {
   GError         *DBerror = NULL;
   GList          *objects;
