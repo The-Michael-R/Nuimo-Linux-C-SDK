@@ -69,5 +69,6 @@ For additional explanation of the functions, see the nuimo.c and the defines nui
 
 ## ToDo
 The list has grown rather short. And I actually don't know if I'll implement this (anytime soon):
+
 1. Multiple Nuimo support. Small workaround to make sure everytime the same Nuimo connects: Use the `nuimo_init_search()` function to select the correct device
 
