@@ -99,10 +99,6 @@ void my_cb_function(uint characteristic, int value, uint dir) {
       printf("left\n");
     } else if (dir == NUIMO_FLY_RIGHT) {
       printf("right\n");
-    } else if (dir == NUIMO_FLY_BACKWARDS) {
-      printf("backwards\n");
-    }  else if (dir == NUIMO_FLY_TORWARDS) {
-      printf("torwards\n");
     }  else if (dir == NUIMO_FLY_UPDOWN) {
       printf("up/down %d\n", value);
     }

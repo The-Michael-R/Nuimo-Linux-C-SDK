@@ -1,3 +1,13 @@
+2016-09-26 The-Michael-R <The-Michael-R@users.noreply.github.com>
+	* nuimo.h:
+	Removed: FLY_BACKWARD and FLY_THORWARD not supported anymore
+
+	* nuimo.c (cb_change_val_notify):
+	Removed: Accidently a debug printf was still in the code.
+
+	* example.c (my_cb_function):
+	Removed: FLY_BACKWARD and FLY_THORWARD not supported anymore
+
 2016-09-18 The-Michael-R <The-Michael-R@users.noreply.github.com>
 	* General:
 	Modified the comments to use doxygen for documentation.

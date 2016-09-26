@@ -42,8 +42,6 @@
 
 #define NUIMO_FLY_LEFT      0
 #define NUIMO_FLY_RIGHT     1
-#define NUIMO_FLY_BACKWARDS 2
-#define NUIMO_FLY_TORWARDS  3
 #define NUIMO_FLY_UPDOWN    4
 
 

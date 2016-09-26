@@ -63,7 +63,7 @@ static struct nuimo_status_s *my_nuimo;
 
 /**
  * Callback routine preformats the received change and call the user call back function
- * It also catches the Nuimo related messages (including disconnect). Currently this get not exposed to user
+ * It also catches the Nuimo related messages (including disconnct). Currently this get not exposed to user
  *
  * @param proxy
  * @param changed_properties 
@@ -84,8 +84,6 @@ static void cb_change_val_notify (GDBusProxy *proxy, GVariant *changed_propertie
   if (GPOINTER_TO_INT(user_data) == NUIMO) {
     v2 = g_variant_lookup_value(changed_properties, "Connected", NULL);
     if (v2 && !g_variant_get_boolean(v2)) {
-      printf("--> Disconnected!\n");
-      
       // Do the hard way: remove everything and start from the beginning
       nuimo_disconnect();
       nuimo_init_bt();
