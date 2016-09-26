@@ -1,5 +1,10 @@
 2016-09-26 The-Michael-R <The-Michael-R@users.noreply.github.com>
 	* nuimo.h:
+	Changed: Definition of actions from #define to enum added and added *_LEN to identify the number of entries
+
+
+2016-09-26 The-Michael-R <The-Michael-R@users.noreply.github.com>
+	* nuimo.h:
 	Removed: FLY_BACKWARD and FLY_THORWARD not supported anymore
 
 	* nuimo.c (cb_change_val_notify):

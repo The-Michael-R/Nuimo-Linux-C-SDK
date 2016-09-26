@@ -34,29 +34,40 @@
  * @defgroup NUIMO_DIRECTIONS Nuimo directions
  * Defines human redable keywords for the different Nuimo events.
  * See the official GATT documentation https://files.senic.com/nuimo-gatt-profile.pdf for changes
+ * The ..._LEN holds the number of entries for each event type.
  * @{
  */
-#define NUIMO_ROTATION_LEFT  0
-#define NUIMO_ROTATION_RIGHT 1
+enum nuimo_rotation {
+  NUIMO_ROTATION_LEFT=0,
+  NUIMO_ROTATION_RIGHT,
+  NUIMO_ROTATION_LEN,
+};
 
+enum nuim_fly {
+  NUIMO_FLY_LEFT =0,
+  NUIMO_FLY_RIGHT,
+  NUIMO_FLY_UPDOWN=4,
+  NUIMO_FLY_LEN
+};
 
-#define NUIMO_FLY_LEFT      0
-#define NUIMO_FLY_RIGHT     1
-#define NUIMO_FLY_UPDOWN    4
+  
+enum nuimo_button {
+  NUIMO_BUTTON_RELEASE=0,
+  NUIMO_BUTTON_PRESS,
+  NUIMO_BUTTON_LEN
+ };
 
-
-#define NUIMO_BUTTON_RELEASE 0
-#define NUIMO_BUTTON_PRESS   1
-
-
-#define NUIMO_SWIPE_LEFT   0
-#define NUIMO_SWIPE_RIGHT  1
-#define NUIMO_SWIPE_UP     2
-#define NUIMO_SWIPE_DOWN   3
-#define NUIMO_TOUCH_LEFT   4
-#define NUIMO_TOUCH_RIGHT  5
-#define NUIMO_TOUCH_TOP    6
-#define NUIMO_TOUCH_BOTTOM 7
+enum nuimo_swipe {
+  NUIMO_SWIPE_LEFT = 0,
+  NUIMO_SWIPE_RIGHT,  
+  NUIMO_SWIPE_UP,     
+  NUIMO_SWIPE_DOWN,   
+  NUIMO_TOUCH_LEFT,   
+  NUIMO_TOUCH_RIGHT,  
+  NUIMO_TOUCH_TOP,    
+  NUIMO_TOUCH_BOTTOM,
+  NUIMO_SWIPE_LEN,     
+};
 /** @} */
 
 
