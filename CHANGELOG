@@ -1,3 +1,32 @@
+2016-10-03 The-Michael-R <The-Michael-R@users.noreply.github.com>
+	* Makefile:
+	Added: -g to the debug switches
+
+	* nuimo.c:
+	Changed: uint to unsigned int
+
+	* nuimo.c (connect_nuimo):
+	Fixed: Wrong test for present BT_ADAPTER and moved it to an earlier to optimize performance
+	Fixed: Set freed pointer to NULL
+	Changed: Replaced malloc/setmem/strncpy by strdup
+
+	* nuimo.c (get_characteristics):
+	Changed: Replaced malloc/setmem/strncpy by strdup
+
+	* nuimo.c (cb_object_removed):
+	Fixed: Wrong test for present BT_ADAPTER and moved it to an earlier to optimize performance
+
+	* nuimo.c (nuimo_print_status):
+	Fixed: If no [NUIMO].path is present, skip next printf section
+	Added: Print of Nuimp path
+
+	* nuimo.c (nuimo_read_value):
+	Fixed: Missing initialisation of inters and values. Caused problems because the coded tested for NULL pointers.
+
+	* nuimo.c nuimo_init_bt):
+	Changed: Call of get_characteristics() only if NUIMO.proxy is set
+
+
 2016-09-26 The-Michael-R <The-Michael-R@users.noreply.github.com>
 	* nuimo.h:
 	Changed: Definition of actions from #define to enum added and added *_LEN to identify the number of entries

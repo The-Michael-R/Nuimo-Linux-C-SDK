@@ -51,7 +51,7 @@ struct nuimo_status_s {
   gulong              object_removed_sig_hdl;            /// Holds the handler for 'BT lost a conneted device'
   GDBusObjectManager *manager;                           /// GDbus manager.
   gboolean            active_discovery;                  /// Just to remember that the code started a discovery
-  void              (*cb_function)(uint, int, uint);     /// This is the pointer to the user callback function
+  void              (*cb_function)(unsigned int, int, unsigned int);     /// This is the pointer to the user callback function
   characteristic_s    characteristic[NUIMO_ENTRIES_LEN]; /// An array of structs to manage all required information for each characteristic and devices
 };
 
@@ -75,7 +75,7 @@ static void cb_change_val_notify (GDBusProxy *proxy, GVariant *changed_propertie
   const char *value;
   gsize       len;
   gint16       number;
-  uint        direction = 0;
+  unsigned int direction = 0;
 
   DEBUG_PRINT(("cb_change_val_notify\n"));
 
@@ -139,9 +139,12 @@ static void connect_nuimo (GDBusObjectManager *manager, GDBusObject *object) {
   GList       *if_list, *interfaces;
   GError      *DBerror;
   const gchar *path;
-  uint         length;
   
   DEBUG_PRINT(("connect_nuimo\n"));
+ 
+  if (!my_nuimo->characteristic[BT_ADAPTER].proxy) {
+    return;
+  }
 
   path       = g_dbus_object_get_object_path(object);
   interfaces = g_dbus_object_get_interfaces (G_DBUS_OBJECT (object));
@@ -150,8 +153,7 @@ static void connect_nuimo (GDBusObjectManager *manager, GDBusObject *object) {
 
     // Search for Nuimo
     variant = g_dbus_proxy_get_cached_property (if_list->data, "Name");
-    if (!my_nuimo->characteristic[BT_ADAPTER].path &&
-	variant && !strcmp(NUIMO_NAME, g_variant_get_string(variant, NULL))) {
+    if (variant && !strcmp(NUIMO_NAME, g_variant_get_string(variant, NULL))) {
 
       // If keyword is set check if the value matches. if not continue
       if (my_nuimo->keyword) {
@@ -162,11 +164,8 @@ static void connect_nuimo (GDBusObjectManager *manager, GDBusObject *object) {
       }
 	
       // Just found the Nuimo I was looking for. So connect to it
-      length = strlen(path) + 1;
-      my_nuimo->characteristic[NUIMO].path = malloc(length);
-      memset(my_nuimo->characteristic[NUIMO].path, '\0', length);
-      strncpy(my_nuimo->characteristic[NUIMO].path, path, length);
-      
+      my_nuimo->characteristic[NUIMO].path = strdup(path);
+
       my_nuimo->characteristic[NUIMO].proxy = (GDBusProxy*) g_dbus_object_manager_get_interface(manager,
 												my_nuimo->characteristic[NUIMO].path,
 												BT_DEVICE_NAME);
@@ -181,7 +180,8 @@ static void connect_nuimo (GDBusObjectManager *manager, GDBusObject *object) {
 
       if (DBerror) {
 	fprintf(stderr, "*EE* Error connecting: %s\n", DBerror->message);
-	free(my_nuimo->characteristic[BT_ADAPTER].path);
+	free(my_nuimo->characteristic[NUIMO].path);
+	my_nuimo->characteristic[NUIMO].path = NULL;
 	g_variant_unref(variant);
 	g_error_free(DBerror);
 	return;
@@ -242,8 +242,7 @@ static void get_characteristics(GDBusObjectManager *manager, GDBusObject *object
   GVariant    *variant = NULL;
   GList       *if_list, *interfaces;
   const gchar *path;
-  uint         length;
-  uint         i;
+  unsigned int i;
   GError      *DBerror;
 
   DEBUG_PRINT(("get_characteristics\n"));
@@ -255,14 +254,10 @@ static void get_characteristics(GDBusObjectManager *manager, GDBusObject *object
     variant = g_dbus_proxy_get_cached_property (if_list->data, "UUID");
 
     if (variant) {
-      length = strlen(path) + 1;
-
       for (i = NUIMO_BATTERY; i < NUIMO_ENTRIES_LEN; i++) {
 	if (!my_nuimo->characteristic[i].path && !strcmp(NUIMO_UUID[i], g_variant_get_string(variant, NULL))) {
-	  
-	  my_nuimo->characteristic[i].path = malloc(length);
-	  memset(my_nuimo->characteristic[i].path, 0, length);
-	  strncpy(my_nuimo->characteristic[i].path, path, length);
+
+	  my_nuimo->characteristic[i].path = strdup(path);
 	  
 	  my_nuimo->characteristic[i].proxy = (GDBusProxy*) g_dbus_object_manager_get_interface(my_nuimo->manager,
 												my_nuimo->characteristic[i].path,
@@ -338,6 +333,10 @@ static void cb_object_removed (GDBusObjectManager *manager, GDBusObject *object,
   GVariant *variant = NULL;
   GList    *if_list, *interfaces;
 
+  if (!my_nuimo->characteristic[BT_ADAPTER].proxy) {
+    return;
+  }
+  
   // Check if the Nuimo triggered the object-removed event
   interfaces = g_dbus_object_get_interfaces (G_DBUS_OBJECT (object));
       
@@ -345,8 +344,7 @@ static void cb_object_removed (GDBusObjectManager *manager, GDBusObject *object,
 
     // Search for Nuimo
     variant = g_dbus_proxy_get_cached_property (if_list->data, "Name");
-    if (!my_nuimo->characteristic[BT_ADAPTER].path &&
-	variant && !strcmp(NUIMO_NAME, g_variant_get_string(variant, NULL))) {
+    if (variant && !strcmp(NUIMO_NAME, g_variant_get_string(variant, NULL))) {
 
       // If keyword is set check if the value matches. if not continue
       if (my_nuimo->keyword) {
@@ -370,15 +368,18 @@ static void cb_object_removed (GDBusObjectManager *manager, GDBusObject *object,
 void nuimo_print_status() {
   printf("\nCurrent Nuimo Status\n");
   printf("====================\n");
+  printf("  Got BT_ADAPTER proxy %s\n"   , my_nuimo->characteristic[BT_ADAPTER].proxy ? "yes" : " no");
   printf("  Nuimo is%s connected\n"      , my_nuimo->characteristic[NUIMO].connected ? "" : " not");
   printf("  Got Nuimo proxy %s\n"        , my_nuimo->characteristic[NUIMO].proxy ? "yes" : " no");
   printf("  status->device_path   = %s\n", my_nuimo->characteristic[NUIMO].path);
-  printf("  status->battery_path  = %s\n", my_nuimo->characteristic[NUIMO_BATTERY].path);
-  printf("  status->led_path      = %s\n", my_nuimo->characteristic[NUIMO_LED].path);
-  printf("  status->button_path   = %s\n", my_nuimo->characteristic[NUIMO_BUTTON].path);
-  printf("  status->fly_path      = %s\n", my_nuimo->characteristic[NUIMO_FLY].path);
-  printf("  status->swipe_path    = %s\n", my_nuimo->characteristic[NUIMO_SWIPE].path);
-  printf("  status->rotation_path = %s\n", my_nuimo->characteristic[NUIMO_ROTATION].path);
+  if (my_nuimo->characteristic[NUIMO].path) {
+    printf("  status->battery_path  = %s\n", my_nuimo->characteristic[NUIMO_BATTERY].path);
+    printf("  status->led_path      = %s\n", my_nuimo->characteristic[NUIMO_LED].path);
+    printf("  status->button_path   = %s\n", my_nuimo->characteristic[NUIMO_BUTTON].path);
+    printf("  status->fly_path      = %s\n", my_nuimo->characteristic[NUIMO_FLY].path);
+    printf("  status->swipe_path    = %s\n", my_nuimo->characteristic[NUIMO_SWIPE].path);
+    printf("  status->rotation_path = %s\n", my_nuimo->characteristic[NUIMO_ROTATION].path);
+  }
   printf("\n");
 }
 
@@ -473,22 +474,33 @@ int  nuimo_read_value(const unsigned char characteristic) {
  * @return Returns EXIT_SUCCESS or EXIT_FAILURE depending if the request was successful or not
  */
 int nuimo_init_status() {
-  uint i;
+  unsigned int i;
 
   DEBUG_PRINT(("nuimo_init_status\n"));
 
-  my_nuimo = (struct nuimo_status_s *) malloc(sizeof(struct nuimo_status_s));
+  my_nuimo = malloc(sizeof(struct nuimo_status_s));
 
   if (!my_nuimo) {
     return(EXIT_FAILURE);
   }
+
+  my_nuimo->keyword     = NULL;
+  my_nuimo->value       = NULL;
+  my_nuimo->manager     = NULL;
+  my_nuimo->cb_function = NULL;
+
+  my_nuimo->object_added_sig_hdl   = 0;
+  my_nuimo->object_removed_sig_hdl = 0;
   
+  my_nuimo->active_discovery = FALSE;
+
   i = 0;
   while (i < NUIMO_ENTRIES_LEN) {
     my_nuimo->characteristic[i].connected = FALSE;
+    my_nuimo->characteristic[i].path      = NULL;
+    my_nuimo->characteristic[i].proxy     = NULL;
     i++;
   }
-  my_nuimo->active_discovery = FALSE;
 
   return(EXIT_SUCCESS);
 }
@@ -544,7 +556,7 @@ void nuimo_init_cb_function(void *cb_function) {
  * Disconnects from Nuimo and all characteristics and do some cleanup.
  */
 void nuimo_disconnect () {
-  uint i = NUIMO_ENTRIES_LEN;
+  unsigned int i = NUIMO_ENTRIES_LEN;
 
   DEBUG_PRINT(("nuimo_disconnect\n"));
 
@@ -665,13 +677,16 @@ int nuimo_init_bt() {
   if (my_nuimo->characteristic[BT_ADAPTER].proxy) {
     for (ob_list = objects; ob_list != NULL; ob_list = ob_list->next) {
       connect_nuimo(my_nuimo->manager, ob_list->data);
-      get_characteristics(my_nuimo->manager, ob_list->data);
+      if (my_nuimo->characteristic[NUIMO].proxy) {
+	get_characteristics(my_nuimo->manager, ob_list->data);
+      }
     }
   }
 
   // if the Nuimo is not in the list, start looking activley
   if (!my_nuimo->characteristic[NUIMO].proxy && !my_nuimo->active_discovery) {
     DBerror = NULL;
+
     g_dbus_proxy_call_sync( my_nuimo->characteristic[BT_ADAPTER].proxy,
 			    "StartDiscovery",
 			    NULL,
@@ -679,7 +694,8 @@ int nuimo_init_bt() {
 			    -1,
 			    NULL,
 			    &DBerror);
-    
+
+
     if(DBerror) {
       fprintf(stderr, "*EE* Error StartDiscovery: %s\n", DBerror->message);
       g_error_free(DBerror);

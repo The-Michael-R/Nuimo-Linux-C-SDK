@@ -9,7 +9,7 @@ BIN = example
 
 all:	example
 
-debug:	CFLAGS += -DDEBUG
+debug:	CFLAGS += -DDEBUG -g
 debug:	example
 
 example:	$(OBJ)
