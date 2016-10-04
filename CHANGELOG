@@ -1,3 +1,12 @@
+2016-10-04 The-Michael-R <The-Michael-R@users.noreply.github.com>
+	* nuimo.c (nuimo_init_bt):
+	Added: Return EXIT_FAILURE if no BT-Adapter was found.
+	Changed: Moved get_characteristics() in own loop to make sure the order of items in ob_list does not matter
+
+	* nuimo.c (cb_change_val_notify):
+	Changed: Improved rotation handling. Hopefully this is working under 64Bit
+
+
 2016-10-03 The-Michael-R <The-Michael-R@users.noreply.github.com>
 	* Makefile:
 	Added: -g to the debug switches
@@ -23,7 +32,7 @@
 	* nuimo.c (nuimo_read_value):
 	Fixed: Missing initialisation of inters and values. Caused problems because the coded tested for NULL pointers.
 
-	* nuimo.c nuimo_init_bt):
+	* nuimo.c (nuimo_init_bt):
 	Changed: Call of get_characteristics() only if NUIMO.proxy is set
 
 

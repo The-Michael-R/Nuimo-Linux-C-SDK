@@ -71,9 +71,9 @@ static struct nuimo_status_s *my_nuimo;
  * @param user_data
 */
 static void cb_change_val_notify (GDBusProxy *proxy, GVariant *changed_properties, GStrv invalidated_properties, gpointer user_data) {
-  GVariant   *v2;
-  const char *value;
-  gsize       len;
+  GVariant    *v2;
+  const unsigned char  *value;
+  gsize        len;
   gint16       number;
   unsigned int direction = 0;
 
@@ -88,7 +88,7 @@ static void cb_change_val_notify (GDBusProxy *proxy, GVariant *changed_propertie
       nuimo_disconnect();
       nuimo_init_bt();
     }
-} 
+  } 
 
   v2 = g_variant_lookup_value(changed_properties, "Value", NULL);
   
@@ -113,7 +113,7 @@ static void cb_change_val_notify (GDBusProxy *proxy, GVariant *changed_propertie
     break;
     
   case NUIMO_ROTATION :
-    number = value[1] * 256 + value[0];
+    number = ((value[1] & 255) << 8) + (value[0] & 255);
     direction = number > 0 ? NUIMO_ROTATION_LEFT : NUIMO_ROTATION_RIGHT;
     break;
     
@@ -673,20 +673,28 @@ int nuimo_init_bt() {
     }
   }
 
+  if (!my_nuimo->characteristic[BT_ADAPTER].proxy) {
+    return EXIT_FAILURE;
+  }
+
   // If successful, run a second loop and check if the Nuimo is already known
-  if (my_nuimo->characteristic[BT_ADAPTER].proxy) {
+  for (ob_list = objects; ob_list != NULL; ob_list = ob_list->next) {
+    connect_nuimo(my_nuimo->manager, ob_list->data);
+    if (my_nuimo->characteristic[NUIMO].connected) {
+      break;
+    }
+  }
+  
+  if (my_nuimo->characteristic[NUIMO].connected) {
     for (ob_list = objects; ob_list != NULL; ob_list = ob_list->next) {
-      connect_nuimo(my_nuimo->manager, ob_list->data);
-      if (my_nuimo->characteristic[NUIMO].proxy) {
-	get_characteristics(my_nuimo->manager, ob_list->data);
-      }
+      get_characteristics(my_nuimo->manager, ob_list->data);
     }
   }
 
+  
   // if the Nuimo is not in the list, start looking activley
-  if (!my_nuimo->characteristic[NUIMO].proxy && !my_nuimo->active_discovery) {
+  if (!my_nuimo->characteristic[NUIMO].connected && !my_nuimo->active_discovery) {
     DBerror = NULL;
-
     g_dbus_proxy_call_sync( my_nuimo->characteristic[BT_ADAPTER].proxy,
 			    "StartDiscovery",
 			    NULL,
@@ -704,5 +712,5 @@ int nuimo_init_bt() {
     my_nuimo->active_discovery = TRUE;
   }
   
-  return (EXIT_SUCCESS);
+  return EXIT_SUCCESS;
 }
