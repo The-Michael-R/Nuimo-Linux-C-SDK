@@ -35,7 +35,7 @@ static gboolean cb_termination(gpointer data) {
   return(FALSE);
 }
 
-void my_cb_function(uint characteristic, int value, uint dir) {
+void my_cb_function(unsigned int characteristic, int value, unsigned int dir, void *user_data) {
   // Use the characteristic, value and dir to get the user action on Nuimo
   unsigned char img[11] = "<insert bitpattern>";
 
@@ -50,7 +50,7 @@ int main (int argc, char **argv) {
  
   nuimo_init_status();                               // Internal housekeeping
   nuimo_init_search("Address", "DB:3B:2B:xx:xx:xx"); // Optional: Wait for the Nuimo with the right Key/Value pair (insert your Nuimo MAC)
-  nuimo_init_cb_function(my_cb_function);            // Attach callback function
+  nuimo_init_cb_function(my_cb_function, NULL);      // Attach callback function
   nuimo_init_bt();                                   // Initialize Bluetooth-Stack and start searching Nuimo
 
   loop = g_main_loop_new(NULL, FALSE);               // Initialize background main loop (required to receive signals!)
