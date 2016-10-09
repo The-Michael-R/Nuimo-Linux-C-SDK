@@ -4,6 +4,8 @@ The Nuimo is a nice looking and from the feeling well build gadget. It can be us
 
 The Nuimo uses BLE to connect with the environment. This SDK (or library) uses the GLIB DBus interface to connect to the Nuimo. No worries, you don't need to get in touch with the BLE protocol, the DBus handling. Everything is encapsulated.
 
+A simple example is included (example.c) and a more sophisticated usage of this code can be found [here](https://github.com/The-Michael-R/nuimod).
+
 Note: I'm not related to Senic. I just happen to own one of such gadget.
 
 
