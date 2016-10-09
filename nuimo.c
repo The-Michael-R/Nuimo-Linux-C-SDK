@@ -51,7 +51,8 @@ struct nuimo_status_s {
   gulong              object_removed_sig_hdl;            /// Holds the handler for 'BT lost a conneted device'
   GDBusObjectManager *manager;                           /// GDbus manager.
   gboolean            active_discovery;                  /// Just to remember that the code started a discovery
-  void              (*cb_function)(unsigned int, int, unsigned int);     /// This is the pointer to the user callback function
+  void              (*cb_function)(unsigned int, int, unsigned int, void*);     /// This is the pointer to the user callback function
+  void               *user_data;                         /// Pointer to userdata. Can be a pointer to a struct.
   characteristic_s    characteristic[NUIMO_ENTRIES_LEN]; /// An array of structs to manage all required information for each characteristic and devices
 };
 
@@ -100,20 +101,22 @@ static void cb_change_val_notify (GDBusProxy *proxy, GVariant *changed_propertie
 
   switch (GPOINTER_TO_INT(user_data)) {
   case NUIMO_BATTERY :
-  case NUIMO_BUTTON :
     number = value[0];
     break;
+    
+  case NUIMO_BUTTON :
   case NUIMO_SWIPE :
-    number = 0;
+    number    = 0;
     direction = value[0];
     break;
+    
   case NUIMO_FLY :
-    number = value[1];
+    number    = value[1];
     direction = value[0];
     break;
     
   case NUIMO_ROTATION :
-    number = ((value[1] & 255) << 8) + (value[0] & 255);
+    number    = ((value[1] & 255) << 8) + (value[0] & 255);
     direction = number > 0 ? NUIMO_ROTATION_LEFT : NUIMO_ROTATION_RIGHT;
     break;
     
@@ -123,7 +126,7 @@ static void cb_change_val_notify (GDBusProxy *proxy, GVariant *changed_propertie
     return;
   }
 
-  my_nuimo->cb_function(GPOINTER_TO_INT(user_data), number, direction);
+  my_nuimo->cb_function(GPOINTER_TO_INT(user_data), number, direction, my_nuimo->user_data);
 }
 
 
@@ -162,7 +165,7 @@ static void connect_nuimo (GDBusObjectManager *manager, GDBusObject *object) {
 	  continue;
 	}
       }
-	
+      
       // Just found the Nuimo I was looking for. So connect to it
       my_nuimo->characteristic[NUIMO].path = strdup(path);
 
@@ -225,7 +228,7 @@ static void connect_nuimo (GDBusObjectManager *manager, GDBusObject *object) {
       break;
     }
   }
-  
+
   if (variant) {
     g_variant_unref(variant);
   }
@@ -488,6 +491,7 @@ int nuimo_init_status() {
   my_nuimo->value       = NULL;
   my_nuimo->manager     = NULL;
   my_nuimo->cb_function = NULL;
+  my_nuimo->user_data   = NULL;
 
   my_nuimo->object_added_sig_hdl   = 0;
   my_nuimo->object_removed_sig_hdl = 0;
@@ -545,10 +549,11 @@ int nuimo_init_search(const char* key, const char* val) {
  * value          The value of movement. In case of SWIPE/TOUCH the value is 0 \n 
  * direction      Informs you about direction of movement. In case of BUTTON and BATTERY events the value is 0
  */
-void nuimo_init_cb_function(void *cb_function) {
+void nuimo_init_cb_function(void *cb_function, void *user_data) {
   DEBUG_PRINT(("nuimo_init_cb_function\n"));
   
   my_nuimo->cb_function = cb_function;
+  my_nuimo->user_data = user_data;
 }
 
 

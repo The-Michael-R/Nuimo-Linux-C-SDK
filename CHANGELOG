@@ -1,3 +1,34 @@
+2016-10-09 The-Michael-R <The-Michael-R@users.noreply.github.com>
+	* nuimo.h:
+	Changed: Added new parameter of user call-back function
+
+	* nuimo.c (nuimo_status_s):
+	Changed: Changed from u??? to unsigned ???
+	Changed: Added new parameter of user call-back function
+
+	* nuimo.c (cb_change_val_notify):
+	Changed: BUTTON_PRESS reports now changes in the dir-parameter not value
+	Changed: Added new parameter of user call-back function
+
+	* nuimo.c (connect_nuimo):
+	Changed: Added new parameter of user call-back function
+
+	* nuimo.c (nuimo_init_cb_function):
+	Changed: Added new parameter of user call-back function
+
+	* example.c (my_cb_function):
+	Changed: Changed from u??? to unsigned ???
+	Changed: Added new parameter of user call-back function (not used in example)
+	Changed: BUTTON_PRESS reports now changes in the dir-parameter not value
+
+	* example.c (main):
+	Changed: Added new parameter of user call-back function (not used in example)
+
+	* example.h:
+	Changed: Changed from u??? to unsigned ???
+	Changed: Added new parameter of user call-back function (not used in example)
+
+
 2016-10-04 The-Michael-R <The-Michael-R@users.noreply.github.com>
 	* nuimo.c (nuimo_init_bt):
 	Added: Return EXIT_FAILURE if no BT-Adapter was found.

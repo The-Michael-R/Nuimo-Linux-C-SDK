@@ -92,7 +92,7 @@ enum nuimo_chars_e {
 void nuimo_print_status ();
 int  nuimo_init_bt ();
 int  nuimo_init_search (const char* key, const char* val);
-void nuimo_init_cb_function(void *cb_function);
+void nuimo_init_cb_function(void *cb_function, void *user_data);
 int  nuimo_init_status ();
 void nuimo_disconnect ();
 int  nuimo_set_led(const unsigned char* bitmap, const unsigned char brightness, const unsigned char timeout);

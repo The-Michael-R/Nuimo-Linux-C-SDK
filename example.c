@@ -58,10 +58,11 @@ void bmp_to_array(const unsigned char *bmp, unsigned char *array) {
  * @param characteristic The characteristic based on ::nuimo_chars_e
  * @param value          Any decimal returnvalue from the Nuimo (in case of SWIPE/TOUCH events the value is 0)
  * @param dir            Indicated the direction of the received event. based on \ref NUIMO_DIRECTIONS
+ * @param user_data      Pointer to user data. Can be a struct holding information what to do for each event.
  * @see cb_change_val_notify
  * @see nuimo_init_cb_function
  */
-void my_cb_function(uint characteristic, int value, uint dir) {
+void my_cb_function(unsigned int characteristic, int value, unsigned int dir, void *user_data) {
   unsigned char bmp[] =
     "........."
     ".*..*..*."
@@ -84,7 +85,7 @@ void my_cb_function(uint characteristic, int value, uint dir) {
     
   case NUIMO_BUTTON:
     printf("BUTTON %s\n", value ==  NUIMO_BUTTON_PRESS ? "pressed" : "released" );
-    if (value == NUIMO_BUTTON_PRESS) {
+    if (dir == NUIMO_BUTTON_PRESS) {
       bmp_to_array(bmp, img);
       // This right-shift is required as the bmp_to_array is written general, but the Nuimo
       // expectes this single bit on the 'other' end
@@ -149,7 +150,7 @@ int main (int argc, char **argv) {
   nuimo_init_status();
   // Additionaly you can add a filter:
   // nuimo_init_search("Address", "DB:3B:2B:xx:xx:xx");
-  nuimo_init_cb_function(my_cb_function);
+  nuimo_init_cb_function(my_cb_function, NULL);
   nuimo_init_bt();  // Not much will happen until the g_main_loop is started
 
   loop = g_main_loop_new(NULL, FALSE);
