@@ -39,7 +39,7 @@ void my_cb_function(unsigned int characteristic, int value, unsigned int dir, vo
   // Use the characteristic, value and dir to get the user action on Nuimo
   unsigned char img[11] = "<insert bitpattern>";
 
-  if (characteristic == NUIMO_BUTTON && value == NUIMO_BUTTON_PRESS) {
+  if (characteristic == NUIMO_BUTTON && dir == NUIMO_BUTTON_PRESS) {
     nuimo_read_value(NUIMO_BATTERY);                 // The next my_cb_function call will receive the result!
     nuimo_set_led(img, 0x80, 50);                    // Write bitpattern to LED-Matrix
   }
