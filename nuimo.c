@@ -394,9 +394,10 @@ void nuimo_print_status() {
  * @param bitmap     Must be an array of 11 Bytes representing the 9x9 bitmap
  * @param brightness Is the brightness of the LED
  * @param timeout    The time the bitmap is displayed (0...25.5 seconds)
+ * @param mode       Selects the transition mode of (0 = fade in, else fast transition between patterns)
  * @return Returns EXIT_SUCCESS or EXIT_FAILURE depending if the request was successful or not
 */
-int  nuimo_set_led(const unsigned char* bitmap, const unsigned char brightness, const unsigned char timeout) {
+int  nuimo_set_led(const unsigned char* bitmap, const unsigned char brightness, const unsigned char timeout, const unsigned char mode) {
   unsigned char  pattern[13];
   GVariant      *varled;
   GVariant      *vtest[2];
@@ -404,7 +405,8 @@ int  nuimo_set_led(const unsigned char* bitmap, const unsigned char brightness, 
 
   DEBUG_PRINT(("nuimo_set_led\n"));
 
-  memcpy(pattern, bitmap, 11);
+  memcpy(pattern, bitmap, 10);
+  pattern[10] = (bitmap[10] & 0x01) | (mode == 0 ? 0x00 : 0x10); 
   pattern[11] = brightness;
   pattern[12] = timeout;
 
@@ -433,6 +435,57 @@ int  nuimo_set_led(const unsigned char* bitmap, const unsigned char brightness, 
 
   return(EXIT_SUCCESS);
 }  
+
+
+/**
+ * Displays the selected icon on the LED matrix. Dependin on the FW of the Nuimo you can
+ * select one icon out of 255(?) 
+ *
+ * @param icon       Icon to be displayed (e.g. 0 = epty, 1 = scan-animation, 2 = Yin&Yang, ...)
+ * @param brightness Is the brightness of the LED
+ * @param timeout    The time the bitmap is displayed (0...25.5 seconds)
+ * @param mode       Selects the transition mode of (0 = fade in, else fast transition between patterns)
+ * @return Returns EXIT_SUCCESS or EXIT_FAILURE depending if the request was successful or not
+*/
+int nuimo_set_icon(const unsigned char icon, const unsigned char brightness, const unsigned char timeout, const unsigned char mode)
+{
+  unsigned char  pattern[13] = { 0 };
+  GVariant      *varled;
+  GVariant      *vtest[2];
+  GError        *DBerror;
+
+  DEBUG_PRINT(("nuimo_set_icon\n"));
+
+  pattern[0]  = icon;
+  pattern[10] = 0x20 | (mode == 0 ? 0x00 : 0x10); 
+  pattern[11] = brightness;
+  pattern[12] = timeout;
+
+ 
+  vtest[0] = g_variant_new_fixed_array(G_VARIANT_TYPE_BYTE, pattern, 13, 1);
+  vtest[1] = g_variant_new ("a{sv}", NULL);
+  varled = g_variant_new_tuple(vtest, 2);
+
+  DBerror = NULL;
+  g_dbus_proxy_call_sync(my_nuimo->characteristic[NUIMO_LED].proxy,
+			 "WriteValue",
+			 varled,
+			 G_DBUS_CALL_FLAGS_NONE,
+			 -1,
+			 NULL,
+			 &DBerror);
+  
+  if(DBerror) {
+    fprintf(stderr, "*EE* Error WriteValue: %s\n", DBerror->message);
+    g_variant_unref(varled);
+    g_variant_unref(vtest[0]);
+    g_variant_unref(vtest[1]);
+    g_error_free(DBerror);
+    return(EXIT_FAILURE);
+  }
+
+  return(EXIT_SUCCESS);
+}
 
 
 /**

@@ -90,7 +90,9 @@ void my_cb_function(unsigned int characteristic, int value, unsigned int dir, vo
       // This right-shift is required as the bmp_to_array is written general, but the Nuimo
       // expectes this single bit on the 'other' end
       img[10] >>= 7;
-      nuimo_set_led(img, 0x80, 50);
+      nuimo_set_led(img, 0x80, 50, 1);
+    } else {
+      nuimo_set_icon(01, 0x80, 50, 1);
     }
     break;
     

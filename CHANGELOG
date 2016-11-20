@@ -1,3 +1,18 @@
+2016-11-20 The-Michael-R <The-Michael-R@users.noreply.github.com>
+	* nuimo.h:
+	Changed: Added new parameter to nuimo_set_led to select transition mode
+	Added: Added new function to select predefined patterns (nuimo_set_icon
+
+	* nuimo.c (nuimo_set_led):
+	Changed: Added new parameter to select transition mode (new in Nuimo FW 17.11.2016)
+
+	* nuimo.c (nuimo_set_icon):
+	Added: New new function to select predefined pattern (new in Nuimo FW 17.11.2016)
+
+	* example.c (my_cb_function):
+	Changed: adapted new Nuimo functionality, see changes in nuimo.h/nuimo.c
+
+
 2016-10-09 The-Michael-R <The-Michael-R@users.noreply.github.com>
 	* nuimo.h:
 	Changed: Added new parameter of user call-back function

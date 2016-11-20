@@ -95,7 +95,8 @@ int  nuimo_init_search (const char* key, const char* val);
 void nuimo_init_cb_function(void *cb_function, void *user_data);
 int  nuimo_init_status ();
 void nuimo_disconnect ();
-int  nuimo_set_led(const unsigned char* bitmap, const unsigned char brightness, const unsigned char timeout);
+int  nuimo_set_led(const unsigned char* bitmap, const unsigned char brightness, const unsigned char timeout, const unsigned char mode);
+int  nuimo_set_icon(const unsigned char, const unsigned char brightness, const unsigned char timeout, const unsigned char mode);
 int  nuimo_read_value(const unsigned char characteristic);
 
 
