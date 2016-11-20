@@ -43,7 +43,7 @@ void my_cb_function(unsigned int characteristic, int value, unsigned int dir, vo
 
   if (characteristic == NUIMO_BUTTON && dir == NUIMO_BUTTON_PRESS) {
     nuimo_read_value(NUIMO_BATTERY);                 // The next my_cb_function call will receive the result!
-    nuimo_set_led(img, 0x80, 50);                    // Write bitpattern to LED-Matrix
+    nuimo_set_led(img, 0x80, 50, 1);                 // Write bitpattern to LED-Matrix
   }
 }
 
