@@ -285,7 +285,7 @@ static void get_characteristics(GDBusObjectManager *manager, GDBusObject *object
 	      g_error_free(DBerror);
 	      return;
 	    }
-	  
+	    
 	    my_nuimo->characteristic[i].char_sig_hdl = g_signal_connect (my_nuimo->characteristic[i].proxy,
 									 "g-properties-changed",
 									 G_CALLBACK (cb_change_val_notify),
@@ -553,9 +553,10 @@ int nuimo_init_status() {
 
   i = 0;
   while (i < NUIMO_ENTRIES_LEN) {
-    my_nuimo->characteristic[i].connected = FALSE;
-    my_nuimo->characteristic[i].path      = NULL;
-    my_nuimo->characteristic[i].proxy     = NULL;
+    my_nuimo->characteristic[i].connected    = FALSE;
+    my_nuimo->characteristic[i].path         = NULL;
+    my_nuimo->characteristic[i].proxy        = NULL;
+    my_nuimo->characteristic[i].char_sig_hdl = 0;
     i++;
   }
 
