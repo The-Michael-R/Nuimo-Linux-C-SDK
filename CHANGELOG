@@ -10,6 +10,12 @@
 	Added: Ignore temporarily generated emacs files (.#*)
 
 
+2016-12-27 The-Michael-R <The-Michael-R@users.noreply.github.com>
+	* nuimo.c (nuimo_init_status)
+	Changed: Initialised the char_sig_hdl to prevent problems while try to release not connected events
+
+
+
 2016-11-20 The-Michael-R <The-Michael-R@users.noreply.github.com>
 	* nuimo.h:
 	Changed: Added new parameter to nuimo_set_led to select transition mode
