@@ -1,3 +1,15 @@
+2017-02-01  The-Michael-R <The-Michael-R@users.noreply.github.com>
+	* nuimo.h:
+	Added: New LONG_TOUCH event handling. Introduced with Nuimo FW 2.4.1
+
+	* example.c (my_cb_function):
+	Added: New LONG_TOUCH event handling. Introduced with Nuimo FW 2.4.1
+	Fixed: Button-Press used value instead dir create printf string
+
+	* .gitignore:
+	Added: Ignore temporarily generated emacs files (.#*)
+
+
 2016-11-20 The-Michael-R <The-Michael-R@users.noreply.github.com>
 	* nuimo.h:
 	Changed: Added new parameter to nuimo_set_led to select transition mode

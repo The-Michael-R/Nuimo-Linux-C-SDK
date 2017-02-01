@@ -84,7 +84,7 @@ void my_cb_function(unsigned int characteristic, int value, unsigned int dir, vo
     break;
     
   case NUIMO_BUTTON:
-    printf("BUTTON %s\n", value ==  NUIMO_BUTTON_PRESS ? "pressed" : "released" );
+    printf("BUTTON %s\n", dir ==  NUIMO_BUTTON_PRESS ? "pressed" : "released" );
     if (dir == NUIMO_BUTTON_PRESS) {
       bmp_to_array(bmp, img);
       // This right-shift is required as the bmp_to_array is written general, but the Nuimo
@@ -124,8 +124,18 @@ void my_cb_function(unsigned int characteristic, int value, unsigned int dir, vo
       printf("TOUCH right\n");
     } else if (dir == NUIMO_TOUCH_TOP) {
       printf("TOUCH top\n");
-    } else if (dir == NUIMO_TOUCH_BOTTOM) {
-      printf("TOUCH bottom\n");
+
+    } else if (dir == NUIMO_LONG_TOUCH_BOTTOM) {
+      printf("LONG TOUCH bottom\n");
+    } else if (dir == NUIMO_LONG_TOUCH_LEFT) {
+      printf("LONG TOUCH left\n");
+    } else if (dir == NUIMO_LONG_TOUCH_RIGHT) {
+      printf("LONG TOUCH right\n");
+    } else if (dir == NUIMO_LONG_TOUCH_TOP) {
+      printf("LONG TOUCH top\n");
+    } else if (dir == NUIMO_LONG_TOUCH_BOTTOM) {
+      printf("LONG TOUCH bottom\n");
+      
     }
     break;
     
