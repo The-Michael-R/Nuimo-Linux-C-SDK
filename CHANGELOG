@@ -1,3 +1,8 @@
+2017-02-02  The-Michael-R <The-Michael-R@users.noreply.github.com>
+	* example.c (my_cb_function):
+	Fixed: Button-Press Bottom was accidently deleted by yesterdays change
+
+
 2017-02-01  The-Michael-R <The-Michael-R@users.noreply.github.com>
 	* nuimo.h:
 	Added: New LONG_TOUCH event handling. Introduced with Nuimo FW 2.4.1

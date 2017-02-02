@@ -124,9 +124,8 @@ void my_cb_function(unsigned int characteristic, int value, unsigned int dir, vo
       printf("TOUCH right\n");
     } else if (dir == NUIMO_TOUCH_TOP) {
       printf("TOUCH top\n");
-
-    } else if (dir == NUIMO_LONG_TOUCH_BOTTOM) {
-      printf("LONG TOUCH bottom\n");
+    } else if (dir == NUIMO_TOUCH_BOTTOM) {
+      printf("TOUCH bottom\n");
     } else if (dir == NUIMO_LONG_TOUCH_LEFT) {
       printf("LONG TOUCH left\n");
     } else if (dir == NUIMO_LONG_TOUCH_RIGHT) {
@@ -134,8 +133,7 @@ void my_cb_function(unsigned int characteristic, int value, unsigned int dir, vo
     } else if (dir == NUIMO_LONG_TOUCH_TOP) {
       printf("LONG TOUCH top\n");
     } else if (dir == NUIMO_LONG_TOUCH_BOTTOM) {
-      printf("LONG TOUCH bottom\n");
-      
+      printf("LONG TOUCH bottom\n");      
     }
     break;
     
